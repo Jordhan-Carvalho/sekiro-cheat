@@ -3,15 +3,17 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"syscall"
+
+	//"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
 var (
-	kernel32              = syscall.NewLazyDLL("kernel32.dll")
-	procReadProcessMemory = kernel32.NewProc("ReadProcessMemory")
+	procReadProcessMemory = windows.MustLoadDLL("kernel32.dll").MustFindProc("ReadProcessMemory")
+	//kernel32              = syscall.NewLazyDLL("kernel32.dll")
+	//procReadProcessMemory = kernel32.NewProc("ReadProcessMemory")
 )
 
 func readMemoryAt(address int64, processHandle windows.Handle) uint32 {
@@ -29,6 +31,7 @@ func readMemoryAt(address int64, processHandle windows.Handle) uint32 {
 		uintptr(unsafe.Pointer(&length)),
 	)
 
+	fmt.Println(data)
 	bits := binary.LittleEndian.Uint32(data[:])
 	// float := math.Float32frombits(bits)
 	return bits
