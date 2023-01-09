@@ -10,8 +10,11 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+ // WriteProcessMemory((int)processHandle, playerHealthAddress, buffer, buffer.Length, ref bytes);
 var (
-	procReadProcessMemory = windows.MustLoadDLL("kernel32.dll").MustFindProc("ReadProcessMemory")
+  kernel32 = windows.MustLoadDLL("kernel32.dll")
+	procReadProcessMemory = kernel32.MustFindProc("ReadProcessMemory")
+  procWriteProcessMemory = kernel32.MustFindProc("WriteProcessMemory")
 	//kernel32              = syscall.NewLazyDLL("kernel32.dll")
 	//procReadProcessMemory = kernel32.NewProc("ReadProcessMemory")
 )
@@ -58,7 +61,7 @@ func getProcessId(name string) (uint32, error) {
 }
 
 func main() {
-	processId, e := getProcessId("TestCarai.exe")
+	processId, e := getProcessId("sekiro.exe")
 	if e != nil {
 		panic(e)
 	}
@@ -71,7 +74,21 @@ func main() {
 	}
 
 	// Read the memory at the specific address ( 4 bytes)
-	address := 0x1F2C6C24604
+	// address := 0x168BE806184
+	address := 0x7FF4A0AB4D40
 	a := readMemoryAt(int64(address), processHandle)
 	fmt.Println(a)
+
+
+  // write a value at the memory point
+	var n uint32 = 120
+	var length uint32
+	newHealthBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(newHealthBuffer, n)
+
+  procWriteProcessMemory.Call(uintptr(processHandle), uintptr(address), uintptr(unsafe.Pointer(&newHealthBuffer[0])), uintptr(len(newHealthBuffer)), uintptr(unsafe.Pointer(&length)))
+
+  // Read again just to check
+	b := readMemoryAt(int64(address), processHandle)
+	fmt.Println(b)
 }
