@@ -8,22 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jordhan-carvalho/ghidra/system"
-	"github.com/0xrawsec/golang-win32/win32"
-	kernel32 "github.com/0xrawsec/golang-win32/win32/kernel32"
-	windows "golang.org/x/sys/windows"
+	"github.com/jordhan-carvalho/sekiro-cheat/system"
 )
 
 
 var (
-	baseAddress            int64
 	gamePointerOffset      = 0x03AFB218
 )
 
 func getHealthAddress(baseAdress int64) (int64, int64) {
 	// it will game the first pointer values with hard coded offset
-	var gamePointerAddress = baseAddress + int64(gamePointerOffset)
-	// fmt.Println("First pointer value is :", gamePointerAddress)
+	var gamePointerAddress = baseAdress + int64(gamePointerOffset);
 	pointer2 := system.ReadMemoryAtByte8(gamePointerAddress)
 	// fmt.Println("pointer2 result", pointer2)
 

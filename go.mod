@@ -1,4 +1,4 @@
-module github.com/jordhan-carvalho/ghidra
+module github.com/jordhan-carvalho/sekiro-cheat
 
 go 1.19
 

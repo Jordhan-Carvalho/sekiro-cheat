@@ -2,13 +2,7 @@ package system
 
 import (
 	"encoding/binary"
-	"fmt"
-	"log"
-	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
-	"time"
 	"unsafe"
 
 	"github.com/0xrawsec/golang-win32/win32"
@@ -36,7 +30,7 @@ func MemoryReadInit(processId uint32) (int64, bool) {
 		targetModuleFilename := "sekiro.exe"
 		if filepath.Base(s) == targetModuleFilename {
 			info, _ := kernel32.GetModuleInformation(win32handle, moduleHandle)
-			baseAddress = int64(info.LpBaseOfDll)
+      baseAddress := int64(info.LpBaseOfDll)
 			return baseAddress, true
 		}
 	}
