@@ -3,7 +3,12 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 	"unsafe"
 
 	"github.com/0xrawsec/golang-win32/win32"
@@ -55,7 +60,6 @@ func readMemoryAt(address int64) uint32 {
 		uintptr(unsafe.Pointer(&length)),
 	)
 
-	fmt.Println(data)
 	bits := binary.LittleEndian.Uint32(data[:])
 	// float := math.Float32frombits(bits)
 	return bits
@@ -81,32 +85,32 @@ func readMemoryAtByte8(address int64) uint64 {
 func getHealthAddress(baseAdress int64) (int64, int64) {
 	// it will game the first pointer values with hard coded offset
 	var gamePointerAddress = baseAddress + int64(gamePointerOffset)
-	fmt.Println("First pointer value is :", gamePointerAddress)
+	// fmt.Println("First pointer value is :", gamePointerAddress)
 	pointer2 := readMemoryAtByte8(gamePointerAddress)
-	fmt.Println("pointer2 result", pointer2)
+	// fmt.Println("pointer2 result", pointer2)
 
 	secondOffset := 0x28
 	pointer3 := readMemoryAtByte8(int64(pointer2 + uint64(secondOffset)))
-	fmt.Println("pointer3 result", pointer3)
+	// fmt.Println("pointer3 result", pointer3)
 
 	thirdOffset := 0xA40
 	pointer4 := readMemoryAtByte8(int64(pointer3) + int64(thirdOffset))
-	fmt.Println("pointer4 result", pointer4)
+	// fmt.Println("pointer4 result", pointer4)
 
 	fourthOffset := 0x6D0
 	pointer5 := readMemoryAtByte8(int64(pointer4) + int64(fourthOffset))
-	fmt.Println("5 pointer result", pointer5)
+	// fmt.Println("5 pointer result", pointer5)
 
 	fifthOffset := 0x8
 	pointer6 := readMemoryAtByte8(int64(pointer5) + int64(fifthOffset))
-	fmt.Println("6 pointer result", pointer6)
+	// fmt.Println("6 pointer result", pointer6)
 
 	// this time we will read the 4 byte values of the last addres (health data type)
 	sixthOffset := 0xFC0
 	healthMemoryAddress := pointer6 + uint64(sixthOffset)
 	healthValue := readMemoryAt(int64(pointer6) + int64(sixthOffset))
-	fmt.Println("health value", healthValue)
-	fmt.Println("health address", healthMemoryAddress)
+	// fmt.Println("health value", healthValue)
+	// fmt.Println("health address", healthMemoryAddress)
 
 	return int64(healthValue), int64(healthMemoryAddress)
 }
@@ -147,6 +151,26 @@ func getProcessId(name string) (uint32, error) {
 	}
 }
 
+func setHealth(newHealth uint32, healthMemoryAdress int64) {
+	// write a value at the memory point
+	var length uint32
+	newHealthBuffer := make([]byte, 4)
+	binary.LittleEndian.PutUint32(newHealthBuffer, newHealth)
+
+	procWriteProcessMemory.Call(uintptr(handle), uintptr(healthMemoryAdress), uintptr(unsafe.Pointer(&newHealthBuffer[0])), uintptr(len(newHealthBuffer)), uintptr(unsafe.Pointer(&length)))
+}
+
+func periodicallySetHealth(newHealth uint32, healthMemoryAdress int64, period time.Duration) {
+	t := time.NewTicker(period * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C: // Activate periodically
+      setHealth(newHealth, healthMemoryAdress)
+		}
+	}
+}
+
 func main() {
 	processId, e := getProcessId("sekiro.exe")
 	if e != nil {
@@ -155,24 +179,20 @@ func main() {
 
 	// Open the process and populate the global variables and return the base address
 	baseAddress, _ := memoryReadInit(processId)
-	fmt.Println("Base address is", baseAddress)
 
-  currentHealth, healthAddress := getHealthAddress(baseAddress)
-  fmt.Println("currentHealth", currentHealth)
+	currentHealth, healthAddress := getHealthAddress(baseAddress)
+	fmt.Println("currentHealth", currentHealth)
 
-	// Read the memory at the specific address ( 4 bytes)
-	a := readMemoryAt(healthAddress)
-	fmt.Println(a)
+  // Run a function periodically
+	var newHealth uint32 = 320
+  go periodicallySetHealth(newHealth, healthAddress, 1)
 
-	// write a value at the memory point
-	var n uint32 = 300
-	var length uint32
-	newHealthBuffer := make([]byte, 4)
-	binary.LittleEndian.PutUint32(newHealthBuffer, n)
+	// Wait here until CTRL-C or other term signal is received.
+	log.Println("Health cheat is now running. Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
 
-	procWriteProcessMemory.Call(uintptr(handle), uintptr(healthAddress), uintptr(unsafe.Pointer(&newHealthBuffer[0])), uintptr(len(newHealthBuffer)), uintptr(unsafe.Pointer(&length)))
-
-	// Read again just to check
-	b := readMemoryAt(healthAddress)
-	fmt.Println(b)
+	// If anything needs to gracefully shutdown... put it here
+  // like the go routine running periodicaclly
 }
