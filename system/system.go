@@ -2,6 +2,7 @@ package system
 
 import (
 	"encoding/binary"
+	"log"
 	"path/filepath"
 	"unsafe"
 
@@ -18,7 +19,11 @@ var (
 
 func MemoryReadInit(processId uint32) (int64, bool) {
 	// handle, _ = windows.OpenProcess(0x0010 | windows.PROCESS_VM_READ | windows.PROCESS_QUERY_INFORMATION, false, pid)
-	handle, _ = windows.OpenProcess(windows.PROCESS_VM_READ|windows.PROCESS_VM_WRITE|windows.PROCESS_VM_OPERATION, false, processId)
+  var e error
+	handle, e = windows.OpenProcess(windows.PROCESS_VM_READ|windows.PROCESS_VM_WRITE|windows.PROCESS_VM_OPERATION, false, processId)
+  if e != nil {
+    log.Println("YOU MUST RUN AS ADMIN", e)
+  }
 
 	procReadProcessMemory = windows.MustLoadDLL("kernel32.dll").MustFindProc("ReadProcessMemory")
 	procWriteProcessMemory = windows.MustLoadDLL("kernel32.dll").MustFindProc("WriteProcessMemory")
@@ -30,7 +35,7 @@ func MemoryReadInit(processId uint32) (int64, bool) {
 		targetModuleFilename := "sekiro.exe"
 		if filepath.Base(s) == targetModuleFilename {
 			info, _ := kernel32.GetModuleInformation(win32handle, moduleHandle)
-      baseAddress := int64(info.LpBaseOfDll)
+			baseAddress := int64(info.LpBaseOfDll)
 			return baseAddress, true
 		}
 	}

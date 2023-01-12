@@ -11,14 +11,13 @@ import (
 	"github.com/jordhan-carvalho/sekiro-cheat/system"
 )
 
-
 var (
-	gamePointerOffset      = 0x03AFB218
+	gamePointerOffset = 0x03AFB218
 )
 
 func getHealthAddress(baseAdress int64) (int64, int64) {
 	// it will game the first pointer values with hard coded offset
-	var gamePointerAddress = baseAdress + int64(gamePointerOffset);
+	var gamePointerAddress = baseAdress + int64(gamePointerOffset)
 	pointer2 := system.ReadMemoryAtByte8(gamePointerAddress)
 	// fmt.Println("pointer2 result", pointer2)
 
@@ -48,15 +47,13 @@ func getHealthAddress(baseAdress int64) (int64, int64) {
 	return int64(healthValue), int64(healthMemoryAddress)
 }
 
-
-
 func periodicallySetHealth(newHealth uint32, healthMemoryAdress int64, period time.Duration) {
 	t := time.NewTicker(period * time.Second)
 	defer t.Stop()
 	for {
 		select {
 		case <-t.C: // Activate periodically
-      system.WriteAtMemory4Bytes(newHealth, healthMemoryAdress)
+			system.WriteAtMemory4Bytes(newHealth, healthMemoryAdress)
 		}
 	}
 }
@@ -73,9 +70,9 @@ func main() {
 	currentHealth, healthAddress := getHealthAddress(baseAddress)
 	fmt.Println("currentHealth", currentHealth)
 
-  // Run a function periodically
+	// Run a function periodically
 	var newHealth uint32 = 320
-  go periodicallySetHealth(newHealth, healthAddress, 1)
+	go periodicallySetHealth(newHealth, healthAddress, 1)
 
 	// Wait here until CTRL-C or other term signal is received.
 	log.Println("Health cheat is now running. Press CTRL-C to exit.")
@@ -84,5 +81,5 @@ func main() {
 	<-sc
 
 	// If anything needs to gracefully shutdown... put it here
-  // like the go routine running periodicaclly
+	// like the go routine running periodicaclly
 }
